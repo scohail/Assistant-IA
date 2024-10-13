@@ -10,3 +10,6 @@ faiss-cpu==1.7.4
 langchain_nomic==0.2.1
 psycopg2==2.9.8
 streamlit==1.26.0   
+
+
+
