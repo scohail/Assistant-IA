@@ -16,13 +16,13 @@ from langchain_core.prompts.chat import (
 import pandas as pd
 import joblib
 import torch
-from langchain.vectorstores.pgvector import PGVector
+from langchain_postgres.vectorstores import PGVector
 from sqlalchemy import create_engine
 from langchain_nomic   import NomicEmbeddings
 from sqlalchemy import create_engine, text
 import uuid
 import json
-
+import streamlit as st
 # La lecture des pdfs  et l'extraction du texte
 
 
@@ -48,19 +48,13 @@ def get_text_chunks(text):
     return chunks
 
 
-def get_vectorstore(text_chunks ):
+def get_vectorstore_postgres(text_chunks, embed_model ):
     print("getting vectorstore")
-    embeddings = OllamaEmbeddings(model="llama2", show_progress=True)
-    #embeddings = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-xl")
-    vectorstore = FAISS.from_texts(texts=text_chunks, embedding=embeddings)
 
     #save the vectorstore
-    vectorstore.save("vectorstore")
+    
 
-    return vectorstore
-
-
-# def get_vectorstore_postgres(text_chunks,embed_model = NomicEmbeddings(model='nomic-embed-text-v1.5',inference_mode='local',device='gpu' )):
+    # def get_vectorstore_postgres(text_chunks,embed_model = NomicEmbeddings(model='nomic-embed-text-v1.5',inference_mode='local',device='gpu' )):
     print("getting vectorstore")
    
     
@@ -69,22 +63,30 @@ def get_vectorstore(text_chunks ):
     db_url = "postgresql+psycopg2://postgres:root@database.datatika.online:5431/vectordb"
     
     # Create SQLAlchemy engine
-    # engine = create_engine(db_url)  
+    engine = create_engine(db_url)  
 
     
 
     
     # Create PGVector instance
 
+    # embed_model= "llama2"
+    # if embed_model == "llama2":
+    #     pg_vector= PGVector.from_texts(texts=text_chunks, connection_string=db_url  ,embedding= OllamaEmbeddings(model="llama2", show_progress=True),collection_name="llama_embeddings" ) 
 
-    if embed_model == "llama2":
-        pg_vector= PGVector.from_texts(texts=text_chunks, connection_string=db_url  ,embedding= OllamaEmbeddings(model="llama2", show_progress=True),collection_name="llama_embeddings" ) 
+    # vectorstore = PGVector.from_texts(texts=text_chunks, connection=db_url  ,embedding= OllamaEmbeddings(model="llama2", show_progress=True),collection_name="llama_embeddings"  )   
+    vector_store = PGVector(
+    
+    embeddings=OllamaEmbeddings(model="llama2", show_progress=True),
+    collection_name="my_docs",
+    connection=db_url,
+    use_jsonb=True,
+    )   
+    print("text chunks to vectorstore")
+    vector_store.add_texts(texts=text_chunks)
 
-    vectorstore = PGVector.from_texts(texts=text_chunks, connection_string=db_url  ,embedding= embed_model  )   
-
-
-    return vectorstore  
-                
+    return vector_store  
+            
 
 def create_table_if_not_exists(connection, table_name):
 
@@ -109,7 +111,7 @@ def create_table_if_not_exists(connection, table_name):
 
 
 # Fonction pour insérer les embeddings en utilisant PGVector
-def get_vectorstore_postgres(text_chunks, embed_model):
+def get_vectorstore_postgres1(text_chunks, embed_model):
     print("getting vectorstore")
 
     # PostgreSQL connection details
@@ -169,18 +171,19 @@ def get_vectorstore_postgres(text_chunks, embed_model):
 
     print(f"Embeddings insérés dans la table {collection_name}")
 
-    pgvector=PGVector(
-       
-        connection_string=db_url,
-        embedding_function=embed_model_instance,
-        collection_name="nomic_embeddings"
+    pgvector=PGVector(   
+        connection=db_url,
+        embeddings=embed_model_instance,
+        collection_name=collection_name,     
     )
-    print(f'pgvector: {pgvector}')
+
+
+    
     return pgvector
 
 
 
-def get_conversation_chain(vectorstore, model="llama3"):
+def get_conversation_chain(vectorstore, model="llama2"):
     print("getting conversation chain")
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
@@ -202,7 +205,7 @@ def get_conversation_chain(vectorstore, model="llama3"):
 
 
 
-def get_simple_conversation(model = "llama3"):
+def get_simple_conversation(model = "llama2"):
     template_messages = [
         SystemMessage(content="You are a helpfull assistant."),
         MessagesPlaceholder(variable_name="chat_history"),
@@ -224,16 +227,16 @@ def preprocess_and_predict( single_instance, model = "RF"):
     
     # Apply the same transformations as training 
 
-    reference_path = '/home/scohail/Desktop/RAG/ask-multiple-pdfs/Saved_Models/(here)_model_1.pkl'
+    reference_path = 'Saved_Models/(here)_model_1.pkl'
 
     model_path = reference_path.replace('(here)', model)
 
-    scaler = joblib.load('/home/scohail/Desktop/RAG/ask-multiple-pdfs/Saved_Models/scaler_1.pkl')
-    pca = joblib.load('/home/scohail/Desktop/RAG/ask-multiple-pdfs/Saved_Models/pca_1.pkl')
-    product_encoder = joblib.load('/home/scohail/Desktop/RAG/ask-multiple-pdfs/Saved_Models/product_encoder.pkl')
-    collection_encoder = joblib.load('/home/scohail/Desktop/RAG/ask-multiple-pdfs/Saved_Models/collection_encoder.pkl')
+    scaler = joblib.load('Saved_Models/scaler_1.pkl')
+    pca = joblib.load('Saved_Models/pca_1.pkl')
+    product_encoder = joblib.load('Saved_Models/product_encoder.pkl')
+    collection_encoder = joblib.load('Saved_Models/collection_encoder.pkl')
     model = joblib.load(model_path)
-    columns = joblib.load('/home/scohail/Desktop/RAG/ask-multiple-pdfs/Saved_Models/columns_1.pkl')
+    columns = joblib.load('Saved_Models/columns_1.pkl')
 
 
 

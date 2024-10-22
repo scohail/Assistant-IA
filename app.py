@@ -6,58 +6,39 @@ from modules import get_simple_conversation, get_pdf_text, get_text_chunks, get_
 
 
 
-
 def main():
     load_dotenv()
-    st.set_page_config(page_title="Chat with multiple PDFs",
-                       page_icon=":books:")
+    st.set_page_config(page_title="Assistant IA", page_icon=":books:")
     st.write(css, unsafe_allow_html=True)
-    st.header("Chat with multiple modules :books:")
-
-    # Add combo box for selecting LLM
-    # Add combo box for selecting LLM
-    llm_model = st.selectbox(
-        "Select LLM Model",
-        ["llama2", "llama3", "mistral"]
-    )
-    if llm_model == "llama2":
-        model = "codegemma"
-    elif llm_model == "llama3":
-        model = "llama3"
-    elif llm_model == "mistral":
-        model = "mistral"
-    
-    st.write(f"Selected LLM Model: {llm_model}")
-
-
 
     
 
-    
+    # Sidebar Navigation and Parameters
+    with st.sidebar:
 
-    
+        col1, col2 = st.columns(2)
 
+        with col1:
+            st.image("/home/scohail/Desktop/format/RapportLtx_DATATIKA(HOUSNI_Souhail)/Images/resized_Logo.png",  use_column_width=True)
+        
+        with col2:
+            st.image("/home/scohail/Desktop/format/RapportLtx_DATATIKA(HOUSNI_Souhail)/Images/ENSAM-UMI.png", use_column_width=True)
 
-    if "chain" not in st.session_state:
-        st.session_state.chain = get_simple_conversation(model=model)
+        st.write("### Navigation")
+        
+        # Navigation buttons
+        if "page" not in st.session_state:
+            st.session_state.page = "Assistant_IA"
 
-    if "conversation" not in st.session_state:
-        st.session_state.conversation = []
+        Assistant_IA_button = st.button("Assistant_IA")
+        prediction_button = st.button("Prediction")
 
-    st.session_state.chain = get_simple_conversation(model=model)
+        # Update session state based on button clicked
+        if Assistant_IA_button:
+            st.session_state.page = "Assistant_IA"
+        if prediction_button:
+            st.session_state.page = "Prediction"
 
-    
-
-    # Container for the conversation
-    with st.container(height=500, border=True):
-
-        for message in st.session_state.conversation:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-
-    
-    user_question = st.text_input("Ask a question about your documents:", key="fixed_input", label_visibility="hidden", on_change=lambda: handle_user_input())
-    with st.sidebar: 
         st.header("settings")
         st.subheader("RAG")
         st.subheader("Your documents")
@@ -89,17 +70,54 @@ def main():
         st.subheader("Predictive Model")
 
 
-        Prediction_Model = st.selectbox(
+        st.session_state.Prediction_Model = st.selectbox(
         "Select Prediction Model",
         ["DT", "KNN", "MLP", "RF", "SVR"]
         )
 
 
-        
+    # Conditional display based on selected page
+    if st.session_state.page == "Assistant_IA":
+        display_Assistant_IA_page()
+    elif st.session_state.page == "Prediction":
+        display_prediction_page()
 
-    st.header("Prediction Model 📊")            
+# Function for displaying Assistant_IA page
+def display_Assistant_IA_page():
+    st.header("Assistant IA 🤖")
+    llm_model = st.selectbox(
+        "Select LLM Model",
+        ["llama2", "llama3", "mistral"]
+    )
+    # Logic to select LLM model
+    if llm_model == "llama2":
+        model = "codegemma"
+    elif llm_model == "llama3":
+        model = "llama3"
+    elif llm_model == "mistral":
+        model = "mistral"
+
+    st.write(f"Selected LLM Model: {llm_model}")
+
+    if "chain" not in st.session_state:
+        st.session_state.chain = get_simple_conversation(model=model)
+
+    if "conversation" not in st.session_state:
+        st.session_state.conversation = []
+
+    # Container for the conversation
+    with st.container(height=500, border=True):
+        for message in st.session_state.conversation:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+    user_question = st.text_input("Ask a question about your documents:", key="fixed_input", label_visibility="hidden", on_change=lambda: handle_user_input())
+
+# Function for displaying Prediction page
+def display_prediction_page():
+    st.header("Prediction Model 📊")
+    
     with st.form(key='prediction_form'):
-        
         product_description = st.text_input('Product Description (example: Example Product)')
         collection = st.text_input('Collection (example: Example Collection)')
         market = st.text_input('Market (example: Example Market)')
@@ -113,27 +131,168 @@ def main():
     if submit_button:
         new_instance = {
             'Product Description': product_description,
-            'Collection': collection,       
+            'Collection': collection,
             'Market': market,
             'Channel': channel,
             'Subcategory': subcategory,
             'Technology code': technology_code,
             'PPHT Y': PPHT_1
-            
         }
+        if "Prediction_Model" not in st.session_state:
+            st.session_state.Prediction_Model = "RF"
+        prediction = preprocess_and_predict(new_instance, st.session_state.Prediction_Model)
+        st.info(f"Predicted Value of PPHT Y+1: {prediction}")
+
+if __name__ == '__main__':
+    main()
+
+
+# =================================================================================================================================
+# ===========================+FIRST VERSION OF THE CODE==========================================================================
+
+
+# def main():
+#     load_dotenv()
+#     st.set_page_config(page_title="Assistant IA ",
+#                        page_icon=":books:")
+#     st.write(css, unsafe_allow_html=True)
+#     st.header("Chat with multiple modules :books:")
+    
+
+#     # Add combo box for selecting LLM
+#     # Add combo box for selecting LLM
+#     llm_model = st.selectbox(
+#         "Select LLM Model",
+#         ["llama2", "llama3", "mistral"]
+#     )
+#     if llm_model == "llama2":
+#         model = "codegemma"
+#     elif llm_model == "llama3":
+#         model = "llama3"
+#     elif llm_model == "mistral":
+#         model = "mistral"
+    
+#     st.write(f"Selected LLM Model: {llm_model}")
+
+
+
+    
+
+    
+
+    
+
+
+#     if "chain" not in st.session_state:
+#         st.session_state.chain = get_simple_conversation(model=model)
+
+#     if "conversation" not in st.session_state:
+#         st.session_state.conversation = []
+
+#     st.session_state.chain = get_simple_conversation(model=model)
+
+    
+
+#     # Container for the conversation
+#     with st.container(height=500, border=True):
+
+#         for message in st.session_state.conversation:
+#             with st.chat_message(message["role"]):
+#                 st.markdown(message["content"])
+
+    
+#     user_question = st.text_input("Ask a question about your documents:", key="fixed_input", label_visibility="hidden", on_change=lambda: handle_user_input())
+#     with st.sidebar: 
+#         st.header("settings")
+#         st.subheader("RAG")
+#         st.subheader("Your documents")
+#         pdf_docs = st.file_uploader(
+#             "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
         
-        prediction = preprocess_and_predict(new_instance , Prediction_Model)
-        print(prediction)
-        st.info(f"Predicted Value of PPHT Y+1: {prediction}")            
+#         embeddings_model = st.selectbox(
+#         "Select Embeddings Model",
+#         ["llama2", "llama3", "nomic"]
+#         )
+    
+    
+#         st.write(f"Selected Embeddings Model: {embeddings_model}")
+        
+#         if st.button("Process"):        
+#                 # get pdf text
+#                 raw_text = get_pdf_text(pdf_docs)
+#                 print("raw_text done")
+#                 # get the text chunks
+#                 text_chunks = get_text_chunks(raw_text)
+#                 print("text_chunks done")
+#                 # create vector store
+                
+#                 vectorstore = get_vectorstore_postgres(text_chunks,embed_model = embeddings_model)
+                
+#                 # create conversation chain
+#                 st.session_state.chain = get_conversation_chain(vectorstore)
+        
+#         st.subheader("Predictive Model")
+
+
+#         Prediction_Model = st.selectbox(
+#         "Select Prediction Model",
+#         ["DT", "KNN", "MLP", "RF", "SVR"]
+#         )
+
+
+        
+
+#     st.header("Prediction Model 📊")            
+#     with st.form(key='prediction_form'):
+        
+#         product_description = st.text_input('Product Description (example: Example Product)')
+#         collection = st.text_input('Collection (example: Example Collection)')
+#         market = st.text_input('Market (example: Example Market)')
+#         channel = st.text_input('Channel (example: Example Channel)')
+#         subcategory = st.text_input('Subcategory (example: Example Subcategory)')
+#         technology_code = st.text_input('Technology code (example: Example Technology code)')
+#         PPHT_1 = st.number_input('PPHT_1 (example: 123.45)', format="%.2f")
+        
+#         submit_button = st.form_submit_button(label='Predict')
+    
+#     if submit_button:
+#         new_instance = {
+#             'Product Description': product_description,
+#             'Collection': collection,       
+#             'Market': market,
+#             'Channel': channel,
+#             'Subcategory': subcategory,
+#             'Technology code': technology_code,
+#             'PPHT Y': PPHT_1
+            
+#         }
+        
+#         prediction = preprocess_and_predict(new_instance , Prediction_Model)
+#         print(prediction)
+#         st.info(f"Predicted Value of PPHT Y+1: {prediction}")            
                 
                 
              
     
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
 
-# =================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # def handle_user_input():
 #     user_question = st.session_state.fixed_input
