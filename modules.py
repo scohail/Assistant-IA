@@ -23,6 +23,7 @@ from sqlalchemy import create_engine, text
 import uuid
 import json
 import streamlit as st
+from langchain.prompts import PromptTemplate
 # La lecture des pdfs  et l'extraction du texte
 
 
@@ -188,17 +189,42 @@ def get_conversation_chain(vectorstore, model="llama2"):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
 
+
+    template = """
+    Tu es un assistant industriel intelligent qui répond exclusivement en français. Ta mission est de répondre uniquement avec les informations trouvées dans le document fourni.
+    Ne génère pas d'informations supplémentaires, et n'inclus aucune hypothèse. Réponds uniquement en langue française.
+
+    **Tu dois toujours répondre en français.**
+
+    Instructions:
+    - Si la réponse est dans le document, réponds de manière concise et directe.
+    - Si l'information n'est pas présente, réponds exactement : "Le document ne fournit pas cette information."
+
+    Exemple:
+    Question: {question}
+    Réponse:
+    """
+
+
+
     
+
+    
+        
     memory = ConversationBufferMemory(
         memory_key='chat_history', return_messages=True)
     conversation_chain = ConversationalRetrievalChain.from_llm(
         llm=Ollama(model=model),
-        retriever=vectorstore.as_retriever(),
+        retriever=vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 3}),
         memory=memory, 
+        condense_question_prompt=PromptTemplate.from_template(template),
+        verbose = True,    
+        
     )
     
     
     print("conversation_chain done")
+    print(conversation_chain)
     
 
     return conversation_chain

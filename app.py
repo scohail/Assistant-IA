@@ -66,6 +66,7 @@ def main():
                 
                 # create conversation chain
                 st.session_state.chain = get_conversation_chain(vectorstore)
+               
         
         st.subheader("Predictive Model")
 
@@ -101,6 +102,7 @@ def display_Assistant_IA_page():
 
     if "chain" not in st.session_state:
         st.session_state.chain = get_simple_conversation(model=model)
+        
 
     if "conversation" not in st.session_state:
         st.session_state.conversation = []
