@@ -219,7 +219,7 @@ def get_conversation_chain(vectorstore, model="llama2"):
         memory=memory, 
         condense_question_prompt=PromptTemplate.from_template(template),
         verbose = True,    
-        
+        combine_docs_chain_kwargs={"prompt": template}
     )
     
     
